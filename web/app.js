@@ -63,6 +63,29 @@ async function refresh() {
   $('#count').textContent = list.length;
   $('#empty').style.display = list.length ? 'none' : 'block';
   [...wrap.children].forEach((row, i) => wire(row, list[i]));
+  pollStatus();
+}
+
+function applyStatus(list) {
+  list.forEach(s => {
+    const row = document.querySelector(`.row[data-id="${CSS.escape(s.id)}"]`);
+    if (!row) return;
+    const led = row.querySelector('[data-led]');
+    if (!led.classList.contains('busy')) {
+      led.className = 'led ' + (s.connected ? 'ok' : s.tsFound ? '' : 'err');
+    }
+    let tag = row.querySelector('.tag');
+    if (!tag) { tag = document.createElement('span'); tag.className = 'tag'; row.querySelector('.row-id').appendChild(tag); }
+    tag.dataset.q = s.tsFound ? (s.tsRelay ? 'relay' : 'direct') : 'off';
+    tag.textContent = s.tsFound ? (s.tsRelay ? 'relay' : 'direct') : 'offline';
+  });
+}
+
+async function pollStatus() {
+  try {
+    const res = await api('status');
+    if (res.ok) applyStatus(res.data || []);
+  } catch (e) { /* server momentarily unavailable; ignore */ }
 }
 
 $('#add').onsubmit = async (e) => {
@@ -78,3 +101,4 @@ $('#add').onsubmit = async (e) => {
 
 $('#host').textContent = location.host;
 refresh();
+setInterval(pollStatus, 5000);

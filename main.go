@@ -36,8 +36,9 @@ func main() {
 	srv := &api.Server{
 		ConfigPath: cfgPath,
 		Runner:     tools.ExecRunner{},
-		ADBPath:    "adb",
-		ScrcpyPath: "scrcpy",
+		ADBPath:       "adb",
+		ScrcpyPath:    "scrcpy",
+		TailscalePath: "tailscale",
 		LaunchFn: func(args []string) error {
 			return exec.Command("scrcpy", args...).Start()
 		},
