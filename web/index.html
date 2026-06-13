@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>scrcpy-remote</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>scrcpy-remote</h1><span id="status">…</span></header>
+<main>
+  <section id="devices"></section>
+  <form id="add">
+    <h2>Add device</h2>
+    <input name="name" placeholder="Name" required>
+    <input name="ip" placeholder="Tailscale IP (100.x.x.x)" required>
+    <input name="adbPort" type="number" placeholder="adb port" value="5555">
+    <button type="submit">Save</button>
+  </form>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
