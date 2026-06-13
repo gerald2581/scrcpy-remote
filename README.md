@@ -28,9 +28,13 @@ window — this tool just manages devices, connects, and launches with a chosen 
    the scrcpy release zip already bundles `adb.exe`.
 3. Run the binary:
    ```
-   ./scrcpy-remote            # opens http://127.0.0.1:8787 in your browser
+   ./scrcpy-remote                       # local only: http://127.0.0.1:8787
    ./scrcpy-remote --port 9000
+   ./scrcpy-remote --host 100.x.x.x      # reach the dashboard from your other Tailscale devices
    ```
+   > The dashboard has **no authentication**. Keep the default `127.0.0.1` bind unless you set
+   > `--host` to your **Tailscale IP** (only your tailnet devices can reach it). **Never** bind
+   > it to a public address — anyone reaching it could control the phone.
 4. In the dashboard: **Add device** (name + Tailscale IP + adb port) → **Connect** → **Launch**.
    (First time only: pair via `adb pair <ip>:<pairPort> <code>` from a terminal.)
 

@@ -41,7 +41,8 @@ func resolveTool(name string, candidates ...string) string {
 }
 
 func main() {
-	port := flag.Int("port", devices.DefaultPort, "dashboard port (127.0.0.1)")
+	port := flag.Int("port", devices.DefaultPort, "dashboard port")
+	host := flag.String("host", "127.0.0.1", "bind address; keep 127.0.0.1 for local-only, or set your Tailscale IP (e.g. 100.x.x.x) to reach it from your other tailnet devices. The dashboard has NO auth — never bind it to a public address.")
 	flag.Parse()
 
 	home, _ := os.UserHomeDir()
@@ -72,9 +73,16 @@ func main() {
 	mux.Handle("/api/", srv.Handler())
 	mux.Handle("/", http.FileServer(http.FS(web.FS())))
 
-	addr := fmt.Sprintf("127.0.0.1:%d", *port)
-	url := "http://" + addr
+	addr := fmt.Sprintf("%s:%d", *host, *port)
+	browseHost := *host
+	if browseHost == "0.0.0.0" || browseHost == "" {
+		browseHost = "127.0.0.1"
+	}
+	url := fmt.Sprintf("http://%s:%d", browseHost, *port)
 	fmt.Println("scrcpy-remote dashboard:", url)
+	if *host != "127.0.0.1" && *host != "localhost" {
+		fmt.Fprintf(os.Stderr, "WARNING: bound to %s (not localhost). The dashboard has no auth — only do this on a trusted/Tailscale network.\n", *host)
+	}
 	openBrowser(url)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		fmt.Fprintln(os.Stderr, "server error:", err)
