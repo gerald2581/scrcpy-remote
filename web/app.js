@@ -5,8 +5,6 @@ async function api(path, opts) {
   return r.json();
 }
 function uuid() {
-  // crypto.randomUUID is only defined in a secure context (HTTPS or localhost). Over
-  // http on a Tailscale/LAN IP it's undefined, so fall back to a simple unique id.
   try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
   return 'd-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 }
@@ -18,31 +16,67 @@ function toast(msg, ok = true) {
   t.className = 'toast ' + (ok ? 'ok' : 'err');
   t.textContent = msg;
   $('#toasts').appendChild(t);
-  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 2600);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3200);
 }
 
 const PRESETS = ['balanced', 'fast', 'hd'];
+const FIXED = 5555;
+
+function presetSelect() {
+  return `<select class="sel" data-preset>${PRESETS.map(p =>
+    `<option value="${p}">${p[0].toUpperCase() + p.slice(1)}</option>`).join('')}</select>`;
+}
 
 function rowHTML(d, i) {
-  const opts = PRESETS.map(p => `<option value="${p}">${p[0].toUpperCase() + p.slice(1)}</option>`).join('');
+  const persistent = Number(d.adbPort) === FIXED;
+  const serial = `${esc(d.ip)}:${esc(d.adbPort || '—')}`;
   return `<div class="row" data-id="${esc(d.id)}" style="animation-delay:${i * 55}ms">
     <span class="led" data-led></span>
     <div class="row-id">
       <span class="row-name">${esc(d.name)}</span>
-      <span class="row-serial">${esc(d.ip)}:${esc(d.adbPort)}</span>
+      <span class="row-serial">${serial}</span>
+      ${persistent ? '<span class="badge-persist">PERSISTENT :5555</span>' : ''}
     </div>
-    <select class="sel" data-preset>${opts}</select>
+    ${presetSelect()}
     <button class="btn ghost" data-act="connect">Connect</button>
     <button class="btn primary" data-act="launch"><span>Launch</span></button>
+    ${persistent ? '' : '<button class="btn warn" data-act="bootstrap">Bootstrap</button>'}
   </div>`;
 }
 
 async function withBusy(btn, led, label, fn) {
   const prev = btn.innerHTML;
   btn.disabled = true; btn.textContent = label;
-  if (led) { led.className = 'led busy'; }
-  try { return await fn(); }
-  finally { btn.disabled = false; btn.innerHTML = prev; }
+  if (led) led.className = 'led busy';
+  try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = prev; }
+}
+
+function showBootstrapForm(row, d) {
+  if ($('.bs-form', row.parentNode) && $('.bs-form', row.parentNode).previousElementSibling === row) {
+    $('.bs-form', row.parentNode).remove(); return;
+  }
+  const form = document.createElement('div');
+  form.className = 'bs-form';
+  form.innerHTML = `
+    <input data-f="wdPort" type="number" placeholder="WD connect port (e.g. 34171)" required>
+    <input data-f="pairPort" type="number" placeholder="pairing port (first time only)">
+    <input data-f="pairCode" placeholder="pairing code (first time only)">
+    <button class="btn primary" data-go>Make persistent</button>
+    <span class="bs-hint">From the phone's Wireless Debugging screen. Pairing only needed the first time.</span>`;
+  row.after(form);
+  $('[data-go]', form).onclick = async (e) => {
+    const wdPort = Number($('[data-f="wdPort"]', form).value);
+    if (!wdPort) { toast('WD connect port is required', false); return; }
+    const payload = {
+      id: d.id, name: d.name, ip: d.ip, wdPort,
+      pairPort: Number($('[data-f="pairPort"]', form).value) || 0,
+      pairCode: $('[data-f="pairCode"]', form).value || '',
+    };
+    const res = await withBusy(e.currentTarget, null, 'Bootstrapping…', () =>
+      api('bootstrap', { method: 'POST', body: JSON.stringify(payload) }));
+    if (res.ok) { toast('Persistent on :5555 — survives network changes'); refresh(); }
+    else toast('Bootstrap failed: ' + (res.error || 'unknown'), false);
+  };
 }
 
 function wire(row, d) {
@@ -59,6 +93,24 @@ function wire(row, d) {
       api('launch', { method: 'POST', body: JSON.stringify({ ip: d.ip, adbPort: d.adbPort, preset }) }));
     toast(res.ok ? `scrcpy launched · ${preset}` : `Launch failed: ${res.error || 'unknown'}`, res.ok);
   };
+  const bs = $('[data-act="bootstrap"]', row);
+  if (bs) bs.onclick = () => showBootstrapForm(row, d);
+}
+
+function applyStatus(list) {
+  list.forEach(s => {
+    const row = document.querySelector(`.row[data-id="${CSS.escape(s.id)}"]`);
+    if (!row) return;
+    const led = $('[data-led]', row);
+    if (!led.classList.contains('busy')) led.className = 'led ' + (s.connected ? 'ok' : s.tsFound ? '' : 'err');
+    let tag = $('.tag', row);
+    if (!tag) { tag = document.createElement('span'); tag.className = 'tag'; $('.row-id', row).appendChild(tag); }
+    tag.dataset.q = s.tsFound ? (s.tsRelay ? 'relay' : 'direct') : 'off';
+    tag.textContent = s.tsFound ? (s.tsRelay ? 'relay' : 'direct') : 'offline';
+  });
+}
+async function pollStatus() {
+  try { const res = await api('status'); if (res.ok) applyStatus(res.data || []); } catch (e) {}
 }
 
 async function refresh() {
@@ -68,30 +120,8 @@ async function refresh() {
   wrap.innerHTML = list.map(rowHTML).join('');
   $('#count').textContent = list.length;
   $('#empty').style.display = list.length ? 'none' : 'block';
-  [...wrap.children].forEach((row, i) => wire(row, list[i]));
+  [...wrap.querySelectorAll('.row')].forEach((row, i) => wire(row, list[i]));
   pollStatus();
-}
-
-function applyStatus(list) {
-  list.forEach(s => {
-    const row = document.querySelector(`.row[data-id="${CSS.escape(s.id)}"]`);
-    if (!row) return;
-    const led = row.querySelector('[data-led]');
-    if (!led.classList.contains('busy')) {
-      led.className = 'led ' + (s.connected ? 'ok' : s.tsFound ? '' : 'err');
-    }
-    let tag = row.querySelector('.tag');
-    if (!tag) { tag = document.createElement('span'); tag.className = 'tag'; row.querySelector('.row-id').appendChild(tag); }
-    tag.dataset.q = s.tsFound ? (s.tsRelay ? 'relay' : 'direct') : 'off';
-    tag.textContent = s.tsFound ? (s.tsRelay ? 'relay' : 'direct') : 'offline';
-  });
-}
-
-async function pollStatus() {
-  try {
-    const res = await api('status');
-    if (res.ok) applyStatus(res.data || []);
-  } catch (e) { /* server momentarily unavailable; ignore */ }
 }
 
 $('#add').onsubmit = async (e) => {
@@ -99,9 +129,9 @@ $('#add').onsubmit = async (e) => {
   const f = e.target;
   const res = await api('devices', {
     method: 'POST',
-    body: JSON.stringify({ id: uuid(), name: f.name.value, ip: f.ip.value, adbPort: Number(f.adbPort.value) }),
+    body: JSON.stringify({ id: uuid(), name: f.name.value, ip: f.ip.value, adbPort: 0 }),
   });
-  if (res.ok) { f.reset(); refresh(); toast('Device registered'); }
+  if (res.ok) { f.reset(); refresh(); toast('Device registered — click Bootstrap to make it persistent'); }
   else toast('Could not save: ' + (res.error || 'unknown'), false);
 };
 
