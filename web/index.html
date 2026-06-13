@@ -3,21 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>scrcpy-remote</title>
+<title>scrcpy-remote · console</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header><h1>scrcpy-remote</h1><span id="status">…</span></header>
+<div class="atmos" aria-hidden="true"></div>
+<div class="grid" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="name">scrcpy<span class="dot">·</span>remote</span>
+    <span class="sub">device console</span>
+  </div>
+  <div class="host"><span class="led ok"></span><code id="host">127.0.0.1</code></div>
+</header>
+
 <main>
-  <section id="devices"></section>
-  <form id="add">
-    <h2>Add device</h2>
-    <input name="name" placeholder="Name" required>
-    <input name="ip" placeholder="Tailscale IP (100.x.x.x)" required>
-    <input name="adbPort" type="number" placeholder="adb port" value="5555">
-    <button type="submit">Save</button>
-  </form>
+  <section class="panel">
+    <div class="phead"><h2>Devices</h2><span class="count" id="count">0</span></div>
+    <div id="devices" class="rows"></div>
+    <p id="empty" class="empty">No devices registered. Add one below to begin.</p>
+  </section>
+
+  <section class="panel">
+    <div class="phead"><h2>Register device</h2></div>
+    <form id="add" class="form">
+      <label>Name<input name="name" placeholder="e.g. Pixel — Jakarta" required></label>
+      <label>Tailscale IP<input name="ip" placeholder="100.x.x.x" required pattern="\d{1,3}(\.\d{1,3}){3}"></label>
+      <label>adb port<input name="adbPort" type="number" value="5555" required></label>
+      <button class="btn primary" type="submit"><span>+ Register</span></button>
+    </form>
+  </section>
 </main>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
 <script src="app.js"></script>
 </body>
 </html>
