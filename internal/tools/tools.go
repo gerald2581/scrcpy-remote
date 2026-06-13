@@ -46,3 +46,10 @@ func Pair(r Runner, adb, ip string, pairPort int, code string) (string, error) {
 func Connect(r Runner, adb, ip string, adbPort int) (string, error) {
 	return r.Run(adb, "connect", fmt.Sprintf("%s:%d", ip, adbPort))
 }
+
+// Tcpip restarts adbd on the device in TCP mode on a fixed port:
+// `adb -s <serial> tcpip <port>`. After this the device listens on that port on all
+// interfaces, surviving network changes until the device reboots.
+func Tcpip(r Runner, adb, serial string, port int) (string, error) {
+	return r.Run(adb, "-s", serial, "tcpip", fmt.Sprintf("%d", port))
+}

@@ -41,3 +41,19 @@ func TestConnectInvokesADB(t *testing.T) {
 		t.Fatalf("bad adb args: %v", f.last)
 	}
 }
+
+func TestTcpipInvokesADB(t *testing.T) {
+	f := &fakeRunner{out: "restarting in TCP mode port: 5555"}
+	if _, err := Tcpip(f, "adb", "100.1.2.3:34171", 5555); err != nil {
+		t.Fatalf("tcpip: %v", err)
+	}
+	want := []string{"adb", "-s", "100.1.2.3:34171", "tcpip", "5555"}
+	if len(f.last) != len(want) {
+		t.Fatalf("args = %v", f.last)
+	}
+	for i := range want {
+		if f.last[i] != want[i] {
+			t.Fatalf("args[%d]=%q want %q (%v)", i, f.last[i], want[i], f.last)
+		}
+	}
+}
