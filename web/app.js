@@ -4,6 +4,12 @@ async function api(path, opts) {
   const r = await fetch('/api/' + path, opts);
   return r.json();
 }
+function uuid() {
+  // crypto.randomUUID is only defined in a secure context (HTTPS or localhost). Over
+  // http on a Tailscale/LAN IP it's undefined, so fall back to a simple unique id.
+  try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+  return 'd-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
 function esc(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
@@ -93,7 +99,7 @@ $('#add').onsubmit = async (e) => {
   const f = e.target;
   const res = await api('devices', {
     method: 'POST',
-    body: JSON.stringify({ id: crypto.randomUUID(), name: f.name.value, ip: f.ip.value, adbPort: Number(f.adbPort.value) }),
+    body: JSON.stringify({ id: uuid(), name: f.name.value, ip: f.ip.value, adbPort: Number(f.adbPort.value) }),
   });
   if (res.ok) { f.reset(); refresh(); toast('Device registered'); }
   else toast('Could not save: ' + (res.error || 'unknown'), false);
