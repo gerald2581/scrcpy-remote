@@ -10,7 +10,7 @@ func Serial(ip string, adbPort int) string {
 // presets maps a preset name to its scrcpy flag tail (after -s <serial>).
 var presets = map[string][]string{
 	"balanced": {"--video-codec=h264", "--max-size", "1024", "--video-bit-rate", "2M", "--max-fps", "30", "--no-audio"},
-	"fast":     {"--video-codec=h264", "--max-size", "800", "--video-bit-rate", "1.5M", "--max-fps", "20", "--no-audio"},
+	"fast":     {"--video-codec=h264", "--max-size", "800", "--video-bit-rate", "1500K", "--max-fps", "20", "--no-audio"},
 	"hd":       {"--video-codec=h264", "--max-size", "1600", "--video-bit-rate", "8M", "--max-fps", "60"},
 }
 

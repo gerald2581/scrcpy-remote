@@ -55,7 +55,7 @@ func TestLaunchUsesPreset(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("launch status %d: %s", rec.Code, rec.Body)
 	}
-	if strings.Join(gotArgs, " ") == "" || !strings.Contains(strings.Join(gotArgs, " "), "1.5M") {
+	if strings.Join(gotArgs, " ") == "" || !strings.Contains(strings.Join(gotArgs, " "), "1500K") {
 		t.Fatalf("expected fast preset flags, got %v", gotArgs)
 	}
 }

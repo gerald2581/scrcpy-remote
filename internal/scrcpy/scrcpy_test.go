@@ -12,7 +12,7 @@ func TestSerial(t *testing.T) {
 }
 
 func TestFlagsKnownPresets(t *testing.T) {
-	cases := map[string]string{"balanced": "2M", "fast": "1.5M", "hd": "8M"}
+	cases := map[string]string{"balanced": "2M", "fast": "1500K", "hd": "8M"}
 	for preset, wantBitrate := range cases {
 		f := Flags(preset, "100.1.2.3:5555")
 		joined := strings.Join(f, " ")
