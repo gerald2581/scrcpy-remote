@@ -12,6 +12,7 @@ var presets = map[string][]string{
 	"balanced": {"--video-codec=h264", "--max-size", "1024", "--video-bit-rate", "2M", "--max-fps", "30", "--no-audio"},
 	"fast":     {"--video-codec=h264", "--max-size", "800", "--video-bit-rate", "1500K", "--max-fps", "20", "--no-audio"},
 	"hd":       {"--video-codec=h264", "--max-size", "1600", "--video-bit-rate", "8M", "--max-fps", "60"},
+	"lagfree":  {"--video-codec=h264", "--max-size", "640", "--video-bit-rate", "1M", "--max-fps", "15", "--no-audio"},
 }
 
 // Flags returns the scrcpy argument slice for a preset targeting a serial.

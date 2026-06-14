@@ -19,12 +19,13 @@ function toast(msg, ok = true) {
   setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3200);
 }
 
-const PRESETS = ['balanced', 'fast', 'hd'];
+const PRESETS = ['balanced', 'fast', 'hd', 'lagfree'];
+const PRESET_LABELS = { balanced: 'Balanced', fast: 'Fast', hd: 'HD', lagfree: 'Lag-free' };
 const FIXED = 5555;
 
 function presetSelect() {
   return `<select class="sel" data-preset>${PRESETS.map(p =>
-    `<option value="${p}">${p[0].toUpperCase() + p.slice(1)}</option>`).join('')}</select>`;
+    `<option value="${p}">${PRESET_LABELS[p] || p}</option>`).join('')}</select>`;
 }
 
 function rowHTML(d, i) {
@@ -41,6 +42,7 @@ function rowHTML(d, i) {
     <button class="btn ghost" data-act="connect">Connect</button>
     <button class="btn primary" data-act="launch"><span>Launch</span></button>
     ${persistent ? '' : '<button class="btn warn" data-act="bootstrap">Bootstrap</button>'}
+    <button class="btn del" data-act="del" title="Remove device">✕</button>
   </div>`;
 }
 
@@ -95,6 +97,13 @@ function wire(row, d) {
   };
   const bs = $('[data-act="bootstrap"]', row);
   if (bs) bs.onclick = () => showBootstrapForm(row, d);
+  const del = $('[data-act="del"]', row);
+  if (del) del.onclick = async () => {
+    if (!confirm(`Remove "${d.name}"?`)) return;
+    const res = await api('devices?id=' + encodeURIComponent(d.id), { method: 'DELETE' });
+    if (res.ok) { refresh(); toast('Device removed'); }
+    else toast('Remove failed: ' + (res.error || 'unknown'), false);
+  };
 }
 
 function applyStatus(list) {

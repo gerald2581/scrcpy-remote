@@ -73,6 +73,22 @@ func (multiRunner) Run(name string, args ...string) (string, error) {
 	return "", nil
 }
 
+func TestDeleteDevice(t *testing.T) {
+	s := newServer(t)
+	s.Handler().ServeHTTP(httptest.NewRecorder(),
+		httptest.NewRequest("POST", "/api/devices", strings.NewReader(`{"id":"z","name":"Z","ip":"100.0.0.5","adbPort":5555}`)))
+	rec := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rec, httptest.NewRequest("DELETE", "/api/devices?id=z", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("delete status %d: %s", rec.Code, rec.Body)
+	}
+	rec = httptest.NewRecorder()
+	s.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/api/devices", nil))
+	if strings.Contains(rec.Body.String(), `"id":"z"`) {
+		t.Fatalf("device not deleted: %s", rec.Body)
+	}
+}
+
 // recRunner records every Run call (and always succeeds) to assert call order.
 type recRunner struct{ calls [][]string }
 

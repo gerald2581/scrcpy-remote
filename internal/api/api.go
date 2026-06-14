@@ -165,6 +165,18 @@ func (s *Server) devices(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, true, cfg, "")
+	case http.MethodDelete:
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			writeJSON(w, false, nil, "id required")
+			return
+		}
+		cfg = cfg.Delete(id)
+		if err := devices.Save(s.ConfigPath, cfg); err != nil {
+			writeJSON(w, false, nil, err.Error())
+			return
+		}
+		writeJSON(w, true, cfg, "")
 	default:
 		writeJSON(w, false, nil, "method not allowed")
 	}
