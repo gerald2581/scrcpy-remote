@@ -138,7 +138,7 @@ $('#add').onsubmit = async (e) => {
   const f = e.target;
   const res = await api('devices', {
     method: 'POST',
-    body: JSON.stringify({ id: uuid(), name: f.name.value, ip: f.ip.value, adbPort: 0 }),
+    body: JSON.stringify({ id: uuid(), name: f.name.value, ip: f.ip.value, adbPort: Number(f.adbPort.value) || 0 }),
   });
   if (res.ok) { f.reset(); refresh(); toast('Device registered — click Bootstrap to make it persistent'); }
   else toast('Could not save: ' + (res.error || 'unknown'), false);
