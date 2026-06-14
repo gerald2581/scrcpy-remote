@@ -43,7 +43,27 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/launch", s.launch)
 	mux.HandleFunc("/api/status", s.status)
 	mux.HandleFunc("/api/bootstrap", s.bootstrap)
+	mux.HandleFunc("/api/ping", s.ping)
 	return mux
+}
+
+// ping reports the live Tailscale latency (ms) + direct/relay to a device IP.
+func (s *Server) ping(w http.ResponseWriter, r *http.Request) {
+	ip := r.URL.Query().Get("ip")
+	if ip == "" {
+		writeJSON(w, false, nil, "ip required")
+		return
+	}
+	ms, relay, ok := tools.Ping(s.Runner, s.TailscalePath, ip)
+	if !ok {
+		writeJSON(w, false, nil, "no response")
+		return
+	}
+	via := "direct"
+	if relay {
+		via = "relay"
+	}
+	writeJSON(w, true, map[string]any{"ms": ms, "via": via}, "")
 }
 
 // bootstrap pairs (optional) + connects to the dynamic Wireless-Debugging port, switches the

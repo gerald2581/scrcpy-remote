@@ -42,6 +42,20 @@ func TestConnectInvokesADB(t *testing.T) {
 	}
 }
 
+func TestParsePing(t *testing.T) {
+	relayMs, relay, ok := ParsePing("pong from galaxy-a06 (100.67.226.21) via DERP(sin) in 125ms")
+	if !ok || relayMs != 125 || !relay {
+		t.Fatalf("relay parse: ms=%d relay=%v ok=%v", relayMs, relay, ok)
+	}
+	dMs, dRelay, dOk := ParsePing("pong from x (100.1.2.3) via 1.2.3.4:41641 in 60ms")
+	if !dOk || dMs != 60 || dRelay {
+		t.Fatalf("direct parse: ms=%d relay=%v ok=%v", dMs, dRelay, dOk)
+	}
+	if _, _, ok := ParsePing("direct connection not established"); ok {
+		t.Fatalf("expected no-pong to be ok=false")
+	}
+}
+
 func TestTcpipInvokesADB(t *testing.T) {
 	f := &fakeRunner{out: "restarting in TCP mode port: 5555"}
 	if _, err := Tcpip(f, "adb", "100.1.2.3:34171", 5555); err != nil {

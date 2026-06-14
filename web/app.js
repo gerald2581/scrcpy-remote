@@ -19,6 +19,7 @@ function toast(msg, ok = true) {
   setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3200);
 }
 
+let DEVS = [];
 const PRESETS = ['balanced', 'fast', 'hd', 'lagfree'];
 const PRESET_LABELS = { balanced: 'Balanced', fast: 'Fast', hd: 'HD', lagfree: 'Lag-free' };
 const FIXED = 5555;
@@ -35,7 +36,7 @@ function rowHTML(d, i) {
     <span class="led" data-led></span>
     <div class="row-id">
       <span class="row-name">${esc(d.name)}</span>
-      <span class="row-serial">${serial}</span>
+      <span class="row-serial">${serial} <span class="ping" data-ping></span></span>
       ${persistent ? '<span class="badge-persist">PERSISTENT :5555</span>' : ''}
     </div>
     ${presetSelect()}
@@ -122,9 +123,26 @@ async function pollStatus() {
   try { const res = await api('status'); if (res.ok) applyStatus(res.data || []); } catch (e) {}
 }
 
+async function pingAll() {
+  for (const d of DEVS) {
+    try {
+      const res = await api('ping?ip=' + encodeURIComponent(d.ip));
+      const row = document.querySelector(`.row[data-id="${CSS.escape(d.id)}"]`);
+      const el = row && row.querySelector('[data-ping]');
+      if (!el) continue;
+      if (res.ok) {
+        el.textContent = res.data.ms + 'ms';
+        el.dataset.q = res.data.ms < 80 ? 'good' : res.data.ms < 160 ? 'ok' : 'bad';
+        el.title = 'Tailscale ' + res.data.via;
+      } else { el.textContent = '—'; el.dataset.q = 'bad'; }
+    } catch (e) {}
+  }
+}
+
 async function refresh() {
   const res = await api('devices');
   const list = (res.data && res.data.devices) || [];
+  DEVS = list;
   const wrap = $('#devices');
   wrap.innerHTML = list.map(rowHTML).join('');
   $('#count').textContent = list.length;
@@ -147,3 +165,5 @@ $('#add').onsubmit = async (e) => {
 $('#host').textContent = location.host;
 refresh();
 setInterval(pollStatus, 5000);
+setInterval(pingAll, 8000);
+setTimeout(pingAll, 1500);

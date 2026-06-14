@@ -73,6 +73,26 @@ func (multiRunner) Run(name string, args ...string) (string, error) {
 	return "", nil
 }
 
+type pingRunner struct{}
+
+func (pingRunner) Run(name string, args ...string) (string, error) {
+	return "pong from x (100.1.2.3) via DERP(sin) in 130ms", nil
+}
+
+func TestPingReturnsMsAndVia(t *testing.T) {
+	s := newServer(t)
+	s.Runner = pingRunner{}
+	rec := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/api/ping?ip=100.1.2.3", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body)
+	}
+	b := rec.Body.String()
+	if !strings.Contains(b, `"ms":130`) || !strings.Contains(b, `"via":"relay"`) {
+		t.Fatalf("bad ping body: %s", b)
+	}
+}
+
 func TestDeleteDevice(t *testing.T) {
 	s := newServer(t)
 	s.Handler().ServeHTTP(httptest.NewRecorder(),
