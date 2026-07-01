@@ -25,6 +25,13 @@ func TestFlagsKnownPresets(t *testing.T) {
 	}
 }
 
+func TestLagfreeHasJitterBuffer(t *testing.T) {
+	f := strings.Join(Flags("lagfree", "100.1.2.3:5555"), " ")
+	if !strings.Contains(f, "--video-buffer=50") {
+		t.Fatalf("lagfree should add a jitter buffer for relay links: %s", f)
+	}
+}
+
 func TestFlagsUnknownPresetFallsBackToBalanced(t *testing.T) {
 	f := strings.Join(Flags("bogus", "x:1"), " ")
 	if !strings.Contains(f, "--video-bit-rate 2M") {
